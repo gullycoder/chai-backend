@@ -1,14 +1,68 @@
 // import environmental variables as early as possible in the application to make sure that the application behaves as expected
 // require("dotenv").config({ path: "./env" });
 import dotenv from "dotenv";
-// import mongoose from "mongoose";
-// import { DB_NAME } from "./constant";
-// import app from "./app";
+import app from "./app.js";
 import connectDB from "./db/db.js";
+
 dotenv.config({ path: "./env" });
 
-//connect to the database
-connectDB();
+const startServer = async () => {
+  try {
+    await connectDB();
+    console.log("Connected to the database");
+
+    // Error handling for the server connection
+    app.on("error", (error) => {
+      console.error(`Error Connecting the Server: ${error}`);
+      process.exit(1);
+    });
+
+    const PORT = process.env.PORT || 3000;
+
+    // Check if port is in use or if permissions are required
+    app
+      .listen(PORT, () => {
+        console.log(`Server is running on port ${PORT}`);
+      })
+      .on("error", (err) => {
+        if (err.code === "EACCES") {
+          console.error(
+            `Permission denied. You need elevated privileges to bind to port ${PORT}.`
+          );
+          process.exit(1);
+        } else if (err.code === "EADDRINUSE") {
+          console.error(`Port ${PORT} is already in use.`);
+          process.exit(1);
+        } else {
+          console.error(`Server error: ${err}`);
+          process.exit(1);
+        }
+      });
+  } catch (error) {
+    console.error(`Error Connecting to Database: ${error}`);
+    process.exit(1);
+  }
+};
+
+// Start the server
+startServer();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /*
 //use of IFFE to avoid global variables, start the server and connect to the database
