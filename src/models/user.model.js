@@ -72,7 +72,7 @@ userSchema.methods.comparePassword = async function (password) {
   return await bcrypt.compare(password, this.password);
 };
 
-//method to generate a access token for the user
+//method to generate a access token for the user to authenticate the user for protected routes and resources in the application and to keep the user logged in after the user logs in
 userSchema.methods.generateAccessToken = function () {
   return jwt.sign(
     {
@@ -88,7 +88,7 @@ userSchema.methods.generateAccessToken = function () {
   );
 };
 
-//method to generate a refresh token for the user
+//method to generate a refresh token for the user to keep the user logged in after the access token expires or the user logs out and logs in again without entering the password
 userSchema.methods.generateRefreshToken = function () {
   return jwt.sign(
     {
