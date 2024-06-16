@@ -24,4 +24,11 @@ app.use(express.urlencoded({ extended: true, limit: "16kb" }));
 // creating a static file server to serve the files in the public directory
 app.use(express.static("public"));
 
+//mostly routes will add in app.js file so that we can see all the routes at one place
+//importing the user routes here and using it in the app
+import userRoutes from "./routes/user.routes.js";
+
+//routes declaration for the user routes and using the userRoutes, why not using app.get???
+app.use("/api/v1/users", userRoutes); //http://localhost:3000/api/v1/users/register
+
 export default app;
