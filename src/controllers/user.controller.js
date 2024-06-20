@@ -7,9 +7,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 const registerUser = asyncHandler(async (req, res) => {
   // code to register a user
   //step 1: get the user data from the request body from the client side or frontend
-
   const { fullName, userName, email, password } = req.body;
-  console.log(email);
   // step 2: validate the user data to ensure that the user has provided all the required data
 
   if (
@@ -19,20 +17,30 @@ const registerUser = asyncHandler(async (req, res) => {
   }
   //step 3: check if the user already exists in the database
 
-  const existedUser = User.findOne({
+  const existedUser = await User.findOne({
     //use of operator using $or and check all the values in an array
 
     $or: [{ userName: userName }, { email: email }],
   });
   if (existedUser) {
+    console.log("existedUser", existedUser);
     throw new ApiError(409, "User already exists");
   }
   //step 4: check avtar image is available or not and user image is valid or not
 
   const avtarLocalPath = req.files?.avatar[0]?.path;
-  const coverImageLocalPath = req.files?.coverImage[0]?.path;
+  // const coverImageLocalPath = req.files?.coverImage[0]?.path;
+  console.log(avtarLocalPath);
   if (!avtarLocalPath) {
     throw new ApiError(400, "Avatar image is required");
+  }
+  let coverImageLocalPath;
+  if (
+    req.files &&
+    Array.isArray(req.files.coverImage) &&
+    req.files.coverImage.length > 0
+  ) {
+    coverImageLocalPath = req.files.coverImage[0].path;
   }
   //step 5: upload the image to the cloudinary server
 
@@ -42,6 +50,7 @@ const registerUser = asyncHandler(async (req, res) => {
   if (!avatar) {
     throw new ApiError(400, "Failed to upload image");
   }
+
   //step 7: create object with the user data and image URL to save in the database-create entry in db/db call
   const user = await User.create({
     fullName,
@@ -63,8 +72,8 @@ const registerUser = asyncHandler(async (req, res) => {
 
   //step 9: send the success response to the client with the user object
   return res
-    .status(200)
-    .jason(ApiResponse(200, createdUser, "User created successfully"));
+    .status(201)
+    .json(new ApiResponse(200, createdUser, "User registered Successfully"));
   //here we can only handel jason data, so we need to use multer middleware to handle the file data
 
   //checking  if different fields are empty or not,use some method

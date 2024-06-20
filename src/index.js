@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 import app from "./app.js";
 import connectDB from "./db/db.js";
 
-dotenv.config({ path: "./env" });
+dotenv.config({ path: "./.env" });
 
 const startServer = async () => {
   try {
@@ -46,23 +46,6 @@ const startServer = async () => {
 
 // Start the server
 startServer();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 /*
 //use of IFFE to avoid global variables, start the server and connect to the database
