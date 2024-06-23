@@ -67,7 +67,11 @@ userSchema.pre("save", async function (next) {
   }
 });
 
-//method to compare the password entered by the user with the hashed password in the database and return a boolean value if the password is correct
+//method to compare the password entered by the user with the hashed password in the database and return
+//a boolean value if the password is correct
+//This part of the code accesses the methods property of the userSchema.
+//The methods property allows one to define instance methods that can be called on individual user documents (instances of the User model).
+//These methods have access to the document's data through the this keyword.
 userSchema.methods.comparePassword = async function (password) {
   return await bcrypt.compare(password, this.password);
 };
