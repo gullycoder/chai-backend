@@ -7,10 +7,26 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 //we will use access and refresh token multipletime in the application, so we will create a separate function to generate the token
 const generateAccessAndRefreshToken = async (userId) => {
   try {
+    if (!process.env.ACCESS_TOKEN_SECRET || !process.env.ACCESS_TOKEN_EXPIRY) {
+      throw new Error(
+        "Missing environment variables for access token generation."
+      );
+    }
+
+    if (
+      !process.env.REFRESH_TOKEN_SECRET ||
+      !process.env.REFRESH_TOKEN_EXPIRY
+    ) {
+      throw new Error(
+        "Missing environment variables for refresh token generation."
+      );
+    }
+
     const user = await User.findById(userId);
     if (!user) {
       throw new ApiError(404, "User not found");
     }
+
     const accessToken = user.generateAccessToken();
     const refreshToken = user.generateRefreshToken();
     user.refreshToken = refreshToken;
@@ -19,6 +35,7 @@ const generateAccessAndRefreshToken = async (userId) => {
     });
     return { accessToken, refreshToken };
   } catch (error) {
+    console.log("error", error);
     throw new ApiError(500, "Failed to generate tokens");
   }
 };
@@ -103,7 +120,7 @@ const loginUser = asyncHandler(async (req, res) => {
   //step 1: get the user data from the request body from the client side or frontend
   const { email, userName, password } = req.body;
   //step 2: validate the user data to ensure that the user has provided all the required data
-  if (!email || !userName) {
+  if (!(email || userName)) {
     throw new ApiError(400, "Email or username is required");
   }
   // if (![email, userName, password].some((field) => field?.trim() === "")) {
