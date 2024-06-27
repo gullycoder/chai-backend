@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import app from "./app.js";
 import connectDB from "./db/db.js";
 
+// load environmental variables from .env file
 dotenv.config({ path: "./.env" });
 
 const startServer = async () => {
@@ -20,6 +21,8 @@ const startServer = async () => {
     const PORT = process.env.PORT || 3000;
 
     // Check if port is in use or if permissions are required
+    //The app.listen method is used to bind and listen for connections on a specified port.
+    //It effectively starts the server and begins accepting requests.
     app
       .listen(PORT, () => {
         console.log(`Server is running on port ${PORT}`);

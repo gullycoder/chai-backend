@@ -3,6 +3,7 @@ import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import jwt from "jsonwebtoken";
 
 //we will use access and refresh token multipletime in the application, so we will create a separate function to generate the token
 const generateAccessAndRefreshToken = async (userId) => {
@@ -29,7 +30,9 @@ const generateAccessAndRefreshToken = async (userId) => {
 
     const accessToken = user.generateAccessToken();
     const refreshToken = user.generateRefreshToken();
+    //save the refresh token in the user object
     user.refreshToken = refreshToken;
+    //save the refresh token in the database
     await user.save({
       validateBeforeSave: false,
     });
@@ -186,4 +189,51 @@ const logoutUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "User logged out successfully"));
 });
 
-export { registerUser, loginUser, logoutUser };
+const refreshAccessAndRefreshToken = asyncHandler(async (req, res) => {
+  //step 1: get the refresh token from the request cookie or body
+  const refreshTokenReceivedFromClient =
+    req.cookies.refreshToken || req.body.refreshToken; //for mobile app req.body will be used
+  //step 2: check if the refresh token is available or not
+  if (!refreshTokenReceivedFromClient) {
+    throw new ApiError(401, "Unauthorized");
+  }
+  //step 3: verify the refresh token
+  const decodedToken = jwt.verify(
+    refreshTokenReceivedFromClient,
+    process.env.REFRESH_TOKEN_SECRET
+  );
+  //step 4: get the user by id from the refresh token
+  const user = await User.findById(decodedToken?._id);
+  if (!user) {
+    throw new ApiError(401, "Invalid Refresh Token");
+  }
+  //step 4.1: check if the user has the same refresh token in the database
+  if (user?.refreshToken !== refreshTokenReceivedFromClient) {
+    throw new ApiError(401, "Refresh token is expired");
+  }
+  //step 5: generate the new access token and refresh token
+  const options = {
+    httpOnly: true,
+    secure: true,
+  };
+  const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
+    user._id
+  );
+  //step 6: send the new access token and refresh token to the client
+  return res
+    .status(200)
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", refreshToken, options)
+    .json(
+      new ApiResponse(
+        200,
+        {
+          accessToken,
+          refreshToken,
+        },
+        "Access Token refreshed successfully"
+      )
+    );
+});
+
+export { registerUser, loginUser, logoutUser, refreshAccessAndRefreshToken };
