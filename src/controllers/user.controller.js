@@ -236,4 +236,149 @@ const refreshAccessAndRefreshToken = asyncHandler(async (req, res) => {
     );
 });
 
-export { registerUser, loginUser, logoutUser, refreshAccessAndRefreshToken };
+//change password
+const changePassword = asyncHandler(async (req, res) => {
+  //step 1: get the user data from the request body from the client side or frontend
+  const { currentPassword, newPassword } = req.body;
+  //step 2: check if the current password and new password is provided or not
+  if (!currentPassword || !newPassword) {
+    throw new ApiError(400, "Current password and new password is required");
+  }
+  //step 3: check if the current password is correct or not
+  const user = await User.findById(req.user._id);
+  const isPasswordMatch = await user.comparePassword(currentPassword);
+  if (!isPasswordMatch) {
+    throw new ApiError(401, "Invalid current password");
+  }
+  //step 4: update the user password with the new password
+  user.password = newPassword;
+  await user.save({
+    validateBeforeSave: false,
+  });
+  //step 5: send the success response to the client
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Password changed successfully"));
+});
+
+//get current user end point
+const getCurrentUser = asyncHandler(async (req, res) => {
+  // step 1: get the user object from the request object
+  const user = req.user;
+  // step 2: send the user object in the response
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, user, "Current User details fetched successfully")
+    );
+});
+
+// update user profile
+
+const updateUserProfile = asyncHandler(async (req, res) => {
+  //step 1: get the user data from the request body from the client side or frontend
+  const { fullName, email } = req.body; //we can also update the username, avatar, coverImage
+  //production level advice: keep the file update separate end point and use multer middleware to handle the file data
+});
+//step 2: check if the details are provided or not
+if (!fullName || !email) {
+  throw new ApiError(400, "Full name and email is required");
+}
+//step 3: check if the email is already taken by another user or not
+
+const user = await User.findOne({
+  email: email,
+  _id: { $ne: req.user._id },
+});
+// step 4: check if the user is already exists in the database or not
+if (user) {
+  throw new ApiError(409, "Email is already taken");
+}
+
+//step 5: update the user object with the new data
+const updatedUser = await User.findByIdAndUpdate(
+  req.user._id,
+  {
+    $set: {
+      fullName,
+      email,
+    },
+  },
+  { new: true }
+).select("-password -refreshToken");
+
+//step 6: send the updated user object in the response
+return res
+  .status(200)
+  .json(new ApiResponse(200, updatedUser, "User profile updated successfully"));
+
+//update Avatar
+const updateAvatar = asyncHandler(async (req, res) => {
+  //step 1: check if the avatar image is available or not
+  const avatarLocalPath = req.file?.path;
+  if (!avatarLocalPath) {
+    throw new ApiError(400, "Avatar image is required");
+  }
+  //step 2: upload the image to the cloudinary server
+  const avatar = await uploadOnCloudinary(avatarLocalPath);
+  //step 3: check the image is uploaded successfully or not and get the image URL from the cloudinary server
+  if (!avatar.url) {
+    throw new ApiError(400, "Failed to upload avtar image on cloudinary");
+  }
+  //step 4: update the user object with the new avatar image URL
+  const updated = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        avatar: avatar.url,
+      },
+    },
+    { new: true }
+  ).select("-password -refreshToken"); //select method is used to remove the password and refresh token from the user object
+  //step 5: send the updated user object in the response
+  return res
+    .status(200)
+    .json(new ApiResponse(200, updated, "Avatar updated successfully"));
+});
+
+//update cover image
+
+const updateCoverImage = asyncHandler(async (req, res) => {
+  //step 1: check if the cover image is available or not
+  const coverImageLocalPath = req.file?.path;
+  if (!coverImageLocalPath) {
+    throw new ApiError(400, "Cover image is required");
+  }
+  //step 2: upload the image to the cloudinary server
+  const coverImage = await uploadOnCloudinary(coverImageLocalPath);
+  //step 3: check the image is uploaded successfully or not and get the image URL from the cloudinary server
+  if (!coverImage.url) {
+    throw new ApiError(400, "Failed to upload cover image on cloudinary");
+  }
+  //step 4: update the user object with the new cover image URL
+  const updated = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        coverImage: coverImage.url,
+      },
+    },
+    { new: true }
+  ).select("-password -refreshToken"); //select method is used to remove the password and refresh token from the user object
+  //step 5: send the updated user object in the response
+  return res
+    .status(200)
+    .json(new ApiResponse(200, updated, "Cover Image updated successfully"));
+});
+
+export {
+  registerUser,
+  loginUser,
+  logoutUser,
+  refreshAccessAndRefreshToken,
+  changePassword,
+  getCurrentUser,
+  updateUserProfile,
+  updateAvatar,
+  updateCoverImage,
+};
